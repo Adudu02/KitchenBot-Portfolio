@@ -1,0 +1,13 @@
+{
+  "id": "sample_001",
+  "audio": "../audio/sample_001.wav",
+  "speaker": "spk_01",
+  "noise": "kitchen",
+  "transcript_literal": "eh… me das tres tacos al pastor y una horchata grande porfa",
+  "order_expected": {
+    "items": [
+      { "item": "taco al pastor", "quantity": 3, "modifiers": [] },
+      { "item": "agua de horchata", "quantity": 1, "modifiers": ["grande"] }
+    ]
+  }
+}

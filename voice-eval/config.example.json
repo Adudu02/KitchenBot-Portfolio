@@ -1,0 +1,28 @@
+{
+  "corpusDir": "./samples",
+  "aliasesPath": "./aliases.json",
+  "workDir": "./.work",
+  "providers": [
+    {
+      "id": "google-cloud",
+      "enabled": false,
+      "language": "es-MX",
+      "model": "telephony",
+      "credentialEnv": "GOOGLE_APPLICATION_CREDENTIALS"
+    },
+    {
+      "id": "deepgram",
+      "enabled": false,
+      "language": "es-419",
+      "model": "nova-3",
+      "credentialEnv": "DEEPGRAM_API_KEY"
+    },
+    {
+      "id": "canary",
+      "enabled": false,
+      "language": "es-MX",
+      "model": "canary-1b-flash",
+      "commandEnv": "CANARY_COMMAND"
+    }
+  ]
+}

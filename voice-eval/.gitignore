@@ -1,0 +1,17 @@
+# Disposable POC — never commit real customer audio, ground truth, run outputs, or secrets.
+.work/
+config.json
+
+# Customer voice notes / PII
+audio/
+samples/
+
+# Run outputs (contain transcripts derived from customer audio)
+results/
+
+# Credential-shaped files (Google service-account JSON, keys, tokens)
+*credentials*.json
+*service-account*.json
+*.pem
+.env
+.env.*

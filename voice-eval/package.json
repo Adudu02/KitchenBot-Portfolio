@@ -1,0 +1,17 @@
+{
+  "name": "@kitchenbot/voice-eval",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "validate:corpus": "node src/validate-corpus.js",
+    "prepare:audio": "node src/prepare-audio.js",
+    "run:poc": "node src/cli.js"
+  },
+  "dependencies": {
+    "@google-cloud/speech": "8.2.1"
+  }
+}
