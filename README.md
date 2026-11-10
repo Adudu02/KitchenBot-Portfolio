@@ -1,5 +1,7 @@
 # KitchenBot Portfolio
 
+[![CI](https://github.com/Adudu02/KitchenBot-Portfolio/actions/workflows/ci.yml/badge.svg)](https://github.com/Adudu02/KitchenBot-Portfolio/actions/workflows/ci.yml)
+
 Selected, runnable parts of KitchenBot, a WhatsApp ordering system for Mexican kitchens: a speech-recognition evaluation where the best result was 43% fully correct orders against a 65% gate, leading to a documented "defer" decision, speech packages, a thermal-printer Android app, and the architecture decisions behind them.
 
 ## The problem
