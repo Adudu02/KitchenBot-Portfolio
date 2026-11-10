@@ -28,19 +28,22 @@ const SECRET_PATTERNS = [
 // Phone numbers. Separators are horizontal whitespace (incl. NBSP), dots and
 // dashes only, so a match can never span lines.
 const SEP = '[ \\t\\u00A0.-]';
-// With a country code: +52, optional mobile "1" (optionally in parentheses),
-// area code, then 7-8 digits. The leading boundary stops digit runs and hex
-// tokens (epoch millis, hashes); the trailing one stops longer numbers.
+// With a country code (+52, 52 or 0052): optional mobile "1" (optionally in
+// parentheses), then an area code and either 3-4 / 4 digit groups or four pair
+// groups. The leading boundary stops digit runs and hex tokens (epoch millis,
+// hashes); the trailing one stops longer numbers.
 const PHONE_WITH_COUNTRY_CODE = new RegExp(
-  `(?<![A-Za-z0-9])\\+?52${SEP}?(?:\\(?1\\)?)?${SEP}?\\(?\\d{2,3}\\)?${SEP}?\\d{3,4}${SEP}?\\d{4}(?!\\d)`,
+  `(?<![A-Za-z0-9])(?:\\+|00)?52${SEP}?(?:\\(?1\\)?)?${SEP}?` +
+    `(?:\\(?\\d{2,3}\\)?${SEP}?\\d{3,4}${SEP}?\\d{4}|\\(?\\d{2}\\)?(?:${SEP}\\d{2}){4})(?!\\d)`,
   'g',
 );
 // Without a country code, only separated 10-digit shapes: parenthesised area
-// code, 2-4-4 groups, and five pair groups, joined by space, dash or dot.
+// code (with 3-4 digit or pair groups), 2-4-4 groups, and five pair groups,
+// joined by space, dash or dot.
 // Bare 10-digit runs are not flagged (epoch seconds are 10 digits). Groups that
 // continue into a longer separated sequence (dates, lists) are skipped.
 const PHONE_LOCAL = new RegExp(
-  `(?<![A-Za-z0-9])(?<!\\d${SEP})(?:\\(\\d{2,3}\\)${SEP}?\\d{3,4}${SEP}\\d{4}|\\d{2}${SEP}\\d{4}${SEP}\\d{4}|\\d{2}(?:${SEP}\\d{2}){4})(?!\\d)(?!${SEP}\\d)`,
+  `(?<![A-Za-z0-9])(?<!\\d${SEP})(?:\\(\\d{2,3}\\)${SEP}?(?:\\d{3,4}${SEP}\\d{4}|\\d{2}(?:${SEP}\\d{2}){3})|\\d{2}${SEP}\\d{4}${SEP}\\d{4}|\\d{2}(?:${SEP}\\d{2}){4})(?!\\d)(?!${SEP}\\d)`,
   'g',
 );
 const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
@@ -135,6 +138,7 @@ export async function scan(root, { denylist = [] } = {}) {
   for (const rel of files) {
     const lowerPath = rel.toLowerCase();
     if (isForbiddenPath(rel)) findings.push({ file: rel, line: 0, rule: 'forbidden-file' });
+    if (hasRealPhone(rel)) findings.push({ file: rel, line: 0, rule: 'phone' });
     if (terms.some((term) => lowerPath.includes(term))) findings.push({ file: rel, line: 0, rule: 'denylist' });
 
     const abs = join(root, rel);

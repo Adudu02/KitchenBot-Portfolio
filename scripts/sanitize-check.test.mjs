@@ -382,3 +382,50 @@ test('forbidden path segments are case-insensitive and new extensions are flagge
   assert.ok(findings.every((f) => f.rule === 'forbidden-file'));
   assert.deepEqual(findings.map((f) => f.file).sort(), Object.keys(files).sort());
 });
+
+// ---- Fix round 2 ---------------------------------------------------------
+
+const COUNTRY_CODE_PAIR_GROUPED = {
+  'plain': '+52 33' + ' 12 34 56 78',
+  'with mobile 1': '+52 1 33' + ' 12 34 56 78',
+  'with label': 'Tel: +52 55' + ' 12 34 56 78',
+  'dash separated': '+52-33' + '-12-34-56-78',
+  'dash separated without plus': '52-33' + '-12-34-56-78',
+};
+for (const [name, text] of Object.entries(COUNTRY_CODE_PAIR_GROUPED)) {
+  test(`detects country-code phone with pair grouping: ${name}`, async () => {
+    const root = await makeTree({ 'doc.txt': `${text}\n` });
+    assert.deepEqual(await scan(root, {}), [{ file: 'doc.txt', line: 1, rule: 'phone' }]);
+  });
+}
+
+test('detects parenthesised area code with pair grouping', async () => {
+  const root = await makeTree({ 'doc.txt': 'Call ' + '(33)' + ' 12 34 56 78' + ' now\n' });
+  assert.deepEqual(await scan(root, {}), [{ file: 'doc.txt', line: 1, rule: 'phone' }]);
+});
+
+test('detects the international 00 prefix', async () => {
+  const root = await makeTree({ 'doc.txt': 'Call ' + '0052 33' + ' 1234 5678' + ' now\n' });
+  assert.deepEqual(await scan(root, {}), [{ file: 'doc.txt', line: 1, rule: 'phone' }]);
+});
+
+test('allows pair-grouped fictitious phones', async () => {
+  const root = await makeTree({
+    'doc.md': 'Use +52 55 00 00 00 01 or 55 00 00 00 02 or 52 55 00 00 00 03 in examples\n',
+  });
+  assert.deepEqual(await scan(root, {}), []);
+});
+
+test('the phone rule also applies to file paths', async () => {
+  const name = 'data/user_52' + '3312345678.json';
+  const root = await makeTree({ [name]: '{}\n' });
+  assert.deepEqual(await scan(root, {}), [{ file: name, line: 0, rule: 'phone' }]);
+});
+
+test('fictitious and epoch-like file names are not flagged', async () => {
+  const root = await makeTree({
+    'data/user_525500000001.json': '{}\n',
+    'data/export-1731254400.json': '{}\n',
+  });
+  assert.deepEqual(await scan(root, {}), []);
+});
