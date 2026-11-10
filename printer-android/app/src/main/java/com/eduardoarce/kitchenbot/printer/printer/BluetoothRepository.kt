@@ -8,6 +8,9 @@ import com.dantsu.escposprinter.connection.bluetooth.BluetoothConnection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import java.io.InputStream
+import java.io.OutputStream
+import java.util.UUID
 
 /**
  * Bluetooth access using the CONNECT-PER-JOB model that the Prompt 2 spike
@@ -78,6 +81,57 @@ class BluetoothRepository(
             }
         }
 
+    /**
+     * Reads the printer's PHYSICAL state via the ESC/POS real-time status
+     * commands (`DLE EOT n`) — the readback the class doc calls out as the only
+     * real confirmation a job printed. DantSu's [DeviceConnection] is write-only
+     * (no InputStream), so this opens a raw [android.bluetooth.BluetoothSocket]
+     * (the raw-socket fallback named in docs/02-Architecture.md §1) to both send
+     * the queries and read the replies on the same connection.
+     *
+     * Returns [PrinterStatus.UNKNOWN] if the printer answers nothing usable —
+     * never throws for a silent printer; only a failed *connect* throws (which
+     * the caller reads as "unreachable"). Runs on Dispatchers.IO.
+     */
+    @SuppressLint("MissingPermission")
+    suspend fun queryStatus(device: BluetoothDevice): PrinterStatus = withContext(Dispatchers.IO) {
+        adapter?.cancelDiscovery()
+        val socket = device.createRfcommSocketToServiceRecord(UUID.fromString(SPP_UUID))
+        try {
+            socket.connect()
+            val output = socket.outputStream
+            val input = socket.inputStream
+            // Drop any leftover ack bytes from a just-finished print job.
+            input.skip(input.available().toLong())
+            PrinterStatus.parse(
+                printer = queryByte(output, input, DLE_EOT_PRINTER),
+                offline = queryByte(output, input, DLE_EOT_OFFLINE),
+                paper = queryByte(output, input, DLE_EOT_PAPER),
+            )
+        } finally {
+            runCatching { socket.close() }
+        }
+    }
+
+    /**
+     * Sends one `DLE EOT n` query and returns the single status byte, or `null`
+     * if the printer stayed silent within the poll window.
+     *
+     * ponytail: fixed short polling on `available()`, not an event-driven read —
+     * Bluetooth SPP has no message framing, and `available()` is the only
+     * non-blocking signal. If a future printer is slow to answer, raise
+     * [STATUS_POLL_TRIES]; that's the tuning knob, not a redesign.
+     */
+    private suspend fun queryByte(out: OutputStream, input: InputStream, cmd: ByteArray): Int? {
+        out.write(cmd)
+        out.flush()
+        repeat(STATUS_POLL_TRIES) {
+            if (input.available() > 0) return input.read()
+            delay(STATUS_POLL_INTERVAL_MS)
+        }
+        return null
+    }
+
     /** Cancels discovery (it kills connect attempts) then opens an SPP socket. */
     @SuppressLint("MissingPermission")
     private fun openConnection(device: BluetoothDevice): BluetoothConnection {
@@ -96,5 +150,21 @@ class BluetoothRepository(
 
         /** Pause after a print write before closing the socket, so the printer flushes. */
         const val FLUSH_SETTLE_MS = 2_500L
+
+        // ESC/POS real-time status queries: DLE EOT n → 0x10 0x04 n.
+        /** DLE EOT 1 — printer status (online/offline). */
+        private val DLE_EOT_PRINTER = byteArrayOf(0x10, 0x04, 0x01)
+
+        /** DLE EOT 2 — offline cause (cover open, error). */
+        private val DLE_EOT_OFFLINE = byteArrayOf(0x10, 0x04, 0x02)
+
+        /** DLE EOT 4 — paper-roll sensor (paper end / near-end). */
+        private val DLE_EOT_PAPER = byteArrayOf(0x10, 0x04, 0x04)
+
+        /** How many times to poll for a status reply before giving up on it. */
+        private const val STATUS_POLL_TRIES = 10
+
+        /** Delay between status-reply polls (≈300ms total worst case per query). */
+        private const val STATUS_POLL_INTERVAL_MS = 30L
     }
 }

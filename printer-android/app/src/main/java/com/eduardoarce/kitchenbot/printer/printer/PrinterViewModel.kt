@@ -190,17 +190,31 @@ class PrinterViewModel(
                     attempt++
                     try {
                         repository.runJob(block)
-                        _messages.tryEmit(success)
-                        lastDevice?.let {
-                            if (_state.value !is ConnectionState.Connected) {
-                                _state.value = ConnectionState.Connected(it)
+                        // SPP acks a write even when no paper moved (see
+                        // BluetoothRepository doc). Read the printer back: only a
+                        // POSITIVELY reported fault downgrades the success — an
+                        // unknown/silent printer is trusted, so printers that
+                        // don't answer DLE EOT behave exactly as before.
+                        val problem = readPrinterProblem()
+                        if (problem != null) {
+                            _state.value = ConnectionState.Error(problem)
+                        } else {
+                            _messages.tryEmit(success)
+                            lastDevice?.let {
+                                if (_state.value !is ConnectionState.Connected) {
+                                    _state.value = ConnectionState.Connected(it)
+                                }
                             }
                         }
                         return@launch
                     } catch (e: Exception) {
                         if (attempt >= MAX_PRINT_ATTEMPTS) {
+                            // If the printer is reachable, name the real cause
+                            // (out of paper, cover open…); otherwise fall back to
+                            // the generic "turn it on" message.
                             _state.value = ConnectionState.Error(
-                                "$failure. Turn the printer on, then tap Retry."
+                                readPrinterProblem()
+                                    ?: "$failure. Turn the printer on, then tap Retry."
                             )
                             return@launch
                         }
@@ -212,6 +226,20 @@ class PrinterViewModel(
             } finally {
                 _busy.value = false
             }
+        }
+    }
+
+    /**
+     * Reads the selected printer's physical state and returns a user-facing
+     * problem message, or `null` if the printer is fine, didn't answer, or
+     * couldn't be reached (a query failure must never manufacture a fault).
+     */
+    private suspend fun readPrinterProblem(): String? {
+        val device = lastDevice ?: return null
+        return try {
+            repository.queryStatus(device).problem()
+        } catch (e: Exception) {
+            null
         }
     }
 

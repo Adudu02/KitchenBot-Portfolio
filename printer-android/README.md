@@ -52,6 +52,10 @@ this repository.
   again on the next poll.
 - **Status sync:** heartbeat and printer/Bluetooth-device sync to the API, which
   can answer with remote ticket settings (header title, footer, paper size).
+- **Printer status readback:** after a manual print, and when one fails, the app
+  asks the printer for its physical state over ESC/POS `DLE EOT` (offline,
+  paper out, cover open) so the UI can show the cause. Whether a given printer
+  model answers is hardware-dependent and unverified.
 - **Ticket editor:** header, logo, footer, uppercase style, live preview, test
   print and a standalone cut-paper action.
 - **Optional dashboard shortcut:** a web view for a kitchen display. The mock
