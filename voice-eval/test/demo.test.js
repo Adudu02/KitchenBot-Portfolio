@@ -24,8 +24,14 @@ test('demo totals over the seven gate-2 cases', () => {
     result.rows.filter((r) => r.correct).map((r) => r.id),
     ['exact-match', 'numeric-variant', 'alias-variant']
   );
+  assert.equal(result.totals.substitutions, 1);
   assert.equal(row('insertion').insertions, 1);
   assert.equal(row('insertion').correct, false);
+  assert.equal(row('empty-transcript').deletions, 1);
+  assert.equal(row('empty-transcript').substitutions, 0);
+  for (const r of result.rows.filter(({ id }) => id !== 'insertion')) {
+    assert.equal(r.insertions, 0, `${r.id} has no insertions`);
+  }
 });
 
 test('table has separate Deletions and Substitutions columns', () => {

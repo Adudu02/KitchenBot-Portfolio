@@ -45,14 +45,13 @@ reasoning is in [ADR 0002](../docs/adr/0002-voice-poc-evaluation-criteria.md).
 
 ## Why deletions and substitutions are separate metrics
 
-The ordering agent reads the order back to the customer before closing. That
-read-back catches a wrong item (the customer hears "agua de jamaica" and
-corrects it) but not a missing one: nobody notices an item that was never
-mentioned. They confirm, hang up, and the drink never arrives.
+The ordering agent reads the order back to the customer before closing, which catches a wrong item but not a missing one.
 
-The two errors therefore carry different business costs, and averaging them
-would hide exactly the failure the confirmation step cannot catch. The scorer
-reports them separately, together with insertions (unrequested items).
+That asymmetry is why the two errors are not averaged. A substitution leaves a
+visible trace that the read-back can surface. A deletion leaves no signal at
+all, so nothing downstream can react to it, and it has to be measured as its
+own number. The scorer reports deletions and substitutions separately, together
+with insertions (unrequested items).
 
 ## Thresholds
 
@@ -93,6 +92,12 @@ from the known menu (Deepgram Nova-3 `keyterm`, Google Cloud `speechContexts`).
 | Google Cloud | Orders fully correct (gate, at least 65%) | 3/21 = 14.29% | 3/21 = 14.29% |
 | Google Cloud | Orders missing an item (guardrail, at most 5%) | 17/21 = 80.95% | 17/21 = 80.95% |
 | Google Cloud | Field error rate (discriminator) | 11/102 = 10.78% | 11/102 = 10.78% |
+
+Field error rate is substitutions divided by fields compared, and fields
+compared is three (item, quantity, modifiers) for every recognised item that
+could be paired with an expected item. A provider that recognises more items
+therefore has a larger denominator (114 vs 150 for Deepgram), so the rate is
+only comparable alongside the deletion rate, never on its own.
 
 No tested provider or configuration passed either the gate or the guardrail.
 Boosting helped Deepgram materially but left it roughly 8.5 times above the
