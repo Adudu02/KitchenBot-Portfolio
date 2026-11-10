@@ -14,3 +14,11 @@ build/
 results/
 audio/
 samples/
+*.opus
+*.m4a
+*.oga
+*.flac
+*.sqlite
+*.db
+*.pem
+*.p12

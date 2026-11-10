@@ -111,7 +111,7 @@ test('phone scan does not match hex or uuid tokens', async () => {
   const root = await makeTree({
     'hashes.txt':
       'sha deadbeef52' + '3312345678\n' +
-      'id 3f9a52b1-52' + '33-4123-8456-' + '7890abcdef12\n',
+      'id 3f9a52b1-52' + '3' + '3-4123-8456-' + '7890abcdef12\n',
   });
   assert.deepEqual(await scan(root, {}), []);
 });
@@ -236,4 +236,149 @@ test('in a git work tree, scans what git would commit and skips ignored files', 
   });
   spawnSync('git', ['init', '-q'], { cwd: root });
   assert.deepEqual(await scan(root, {}), [{ file: 'src/leak.js', line: 1, rule: 'secret-pattern' }]);
+});
+
+// ---- Fix round 1 ---------------------------------------------------------
+
+function runCli(args) {
+  return spawnSync(process.execPath, [CLI, ...args], { encoding: 'utf8' });
+}
+
+test('denylist flag with an empty value exits 2', async () => {
+  const root = await makeTree({ 'a.md': 'clean\n' });
+  const res = runCli([root, '--denylist', '']);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /denylist path required/);
+});
+
+test('denylist flag with no value exits 2', async () => {
+  const root = await makeTree({ 'a.md': 'clean\n' });
+  const res = runCli([root, '--denylist']);
+  assert.equal(res.status, 2);
+  assert.match(res.stderr, /denylist path required/);
+});
+
+test('denylist flag followed by another flag exits 2', async () => {
+  const root = await makeTree({ 'a.md': 'clean\n' });
+  const res = runCli([root, '--denylist', '--other']);
+  assert.equal(res.status, 2);
+});
+
+for (const [name, content] of [['empty', ''], ['whitespace-only', '  \n\t\n\n']]) {
+  test(`a ${name} denylist file exits 2`, async () => {
+    const root = await makeTree({ 'a.md': 'clean\n' });
+    const outside = await makeTree({ 'deny.txt': content });
+    const res = runCli([root, '--denylist', join(outside, 'deny.txt')]);
+    assert.equal(res.status, 2);
+    assert.match(res.stderr, /denylist is empty/);
+  });
+}
+
+test('running without a denylist warns on stderr and keeps the exit code', async () => {
+  const root = await makeTree({ 'a.md': 'clean\n' });
+  const res = runCli([root]);
+  assert.equal(res.status, 0);
+  assert.equal(res.stdout, '');
+  assert.equal(res.stderr.trim(), 'no denylist: generic rules only');
+});
+
+test('running with a denylist does not print the no-denylist warning', async () => {
+  const root = await makeTree({ 'a.md': 'clean\n' });
+  const outside = await makeTree({ 'deny.txt': 'something\n' });
+  const res = runCli([root, '--denylist', join(outside, 'deny.txt')]);
+  assert.equal(res.status, 0);
+  assert.equal(res.stderr, '');
+});
+
+test('a denylist file named like a parent-dir prefix inside root is still inside', async () => {
+  const root = await makeTree({ '..deny.txt': 'term\n', 'a.md': 'x\n' });
+  const res = runCli([root, '--denylist', join(root, '..deny.txt')]);
+  assert.equal(res.status, 2);
+});
+
+const MISSED_PHONES = {
+  'underscore before and suffix after': 'user_52' + '3312345678.json',
+  'letter suffix': '52' + '3312345678x',
+  'hyphenated prefix': 'wa-52' + '3312345678',
+  'non-breaking space separator': '+52 ' + '33 12' + '34 5678',
+  'dot separators': '+52.33.' + '1234.5678',
+};
+for (const [name, text] of Object.entries(MISSED_PHONES)) {
+  test(`detects phone: ${name}`, async () => {
+    const root = await makeTree({ 'doc.txt': `${text}\n` });
+    assert.deepEqual(await scan(root, {}), [{ file: 'doc.txt', line: 1, rule: 'phone' }]);
+  });
+}
+
+const LOCAL_PHONES = {
+  'parenthesised area code': '(33)' + ' 1234-5678',
+  'space separated': '33 ' + '1234 5678',
+  'dash separated': '55-' + '1234-5678',
+  'dot separated': '33.' + '1234.5678',
+  'pair grouping': '33 12' + ' 34 56 78',
+  'country code with parenthesised mobile 1': '+52 (1) 33' + ' 1234 5678',
+  'non-breaking space separated': '33 ' + '1234 ' + '5678',
+};
+for (const [name, text] of Object.entries(LOCAL_PHONES)) {
+  test(`detects separated local phone: ${name}`, async () => {
+    const root = await makeTree({ 'doc.txt': `Tel: ${text} (office)\n` });
+    assert.deepEqual(await scan(root, {}), [{ file: 'doc.txt', line: 1, rule: 'phone' }]);
+  });
+}
+
+test('does not flag an unseparated 10-digit run such as an epoch', async () => {
+  const root = await makeTree({ 'log.txt': 'created_at 1731254400 and 3312345678\n' });
+  assert.deepEqual(await scan(root, {}), []);
+});
+
+test('allows fictitious local phones without a country code', async () => {
+  const root = await makeTree({
+    'doc.md': 'Use 55 0000 0001 or (55) 0000-0002 or 55-0000-0003 in examples\n',
+  });
+  assert.deepEqual(await scan(root, {}), []);
+});
+
+test('does not flag separated digit groups that are part of a longer sequence', async () => {
+  const root = await makeTree({ 'doc.md': 'ids 10 20 30 40 50 60 and 2026-11-10 12:30:45\n' });
+  assert.deepEqual(await scan(root, {}), []);
+});
+
+const EXTRA_SECRETS = {
+  jwt: 'auth ' + 'eyJ' + 'a'.repeat(12) + '.' + 'b'.repeat(12) + '.' + 'c'.repeat(12) + '\n',
+  'stripe live key': 'k = ' + 'sk_' + 'live_' + 'A'.repeat(16) + '\n',
+  'stripe test key': 'k = ' + 'sk_' + 'test_' + 'B'.repeat(20) + '\n',
+  'generic api key assignment': 'api_' + 'key = "' + 'A'.repeat(24) + '"\n',
+  'generic secret token colon': 'Secret-' + 'Token: ' + 'z9'.repeat(12) + '\n',
+  'generic refresh token env': 'REFRESH_' + 'TOKEN=' + 'Q'.repeat(30) + '\n',
+};
+for (const [name, content] of Object.entries(EXTRA_SECRETS)) {
+  test(`detects secret pattern: ${name}`, async () => {
+    const root = await makeTree({ 'cfg.txt': content });
+    assert.deepEqual(await scan(root, {}), [{ file: 'cfg.txt', line: 1, rule: 'secret-pattern' }]);
+  });
+}
+
+test('generic assignment pattern ignores short and placeholder values', async () => {
+  const root = await makeTree({ 'cfg.txt': 'api_key = "short"\naccess_token: process.env.ACCESS\n' });
+  assert.deepEqual(await scan(root, {}), []);
+});
+
+test('forbidden path segments are case-insensitive and new extensions are flagged', async () => {
+  const files = {
+    'Voice/Audio/a.txt': 'x',
+    'Voice/Results/r.txt': 'x',
+    'x/clip.opus': 'x',
+    'x/clip.m4a': 'x',
+    'x/clip.oga': 'x',
+    'x/clip.flac': 'x',
+    'x/store.sqlite': 'x',
+    'x/store.db': 'x',
+    'x/cert.pem': 'x',
+    'x/cert.p12': 'x',
+    'x/UPPER.OGG': 'x',
+  };
+  const root = await makeTree(files);
+  const findings = await scan(root, {});
+  assert.ok(findings.every((f) => f.rule === 'forbidden-file'));
+  assert.deepEqual(findings.map((f) => f.file).sort(), Object.keys(files).sort());
 });

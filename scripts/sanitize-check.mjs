@@ -20,18 +20,37 @@ const SECRET_PATTERNS = [
   /(?<![A-Za-z0-9])EAA[A-Za-z0-9]{30,}/, // Meta / WhatsApp Cloud API tokens
   /(?<![A-Za-z0-9])xox[abeoprs]-[A-Za-z0-9-]{10,}/, // Slack tokens
   /-----BEGIN (?:[A-Z]+ )*PRIVATE KEY(?: BLOCK)?-----/, // PEM / OpenSSH / PGP private keys
+  /(?<![A-Za-z0-9])eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/, // JWTs
+  /(?<![A-Za-z0-9])sk_(?:live|test)_[A-Za-z0-9]{16,}/, // Stripe-style keys
+  /(?:api|secret|access|refresh)[_-]?(?:key|token)\s*[:=]\s*['"]?[A-Za-z0-9_-]{24,}/i, // generic assignments
 ];
 
-// Mexican numbers: +52, optional mobile "1", area code, then 7-8 digits.
-// Horizontal whitespace only, so a match can never span lines. Digit runs that
-// are part of a longer token (epoch millis, hashes, UUID segments) are excluded
-// by the word-character and "word-" boundaries.
-const PHONE_PATTERN =
-  /(?<!\w)(?<!\w-)\+?52[ \t-]?1?[ \t-]?\(?\d{2,3}\)?[ \t-]?\d{3,4}[ \t-]?\d{4}(?!\w)(?!-\w)/g;
-// Fictitious numbers (+52 55 0000 00NN, optionally with the mobile "1").
-const FICTITIOUS_PREFIXES = ['52550000', '5215500000'];
+// Phone numbers. Separators are horizontal whitespace (incl. NBSP), dots and
+// dashes only, so a match can never span lines.
+const SEP = '[ \\t\\u00A0.-]';
+// With a country code: +52, optional mobile "1" (optionally in parentheses),
+// area code, then 7-8 digits. The leading boundary stops digit runs and hex
+// tokens (epoch millis, hashes); the trailing one stops longer numbers.
+const PHONE_WITH_COUNTRY_CODE = new RegExp(
+  `(?<![A-Za-z0-9])\\+?52${SEP}?(?:\\(?1\\)?)?${SEP}?\\(?\\d{2,3}\\)?${SEP}?\\d{3,4}${SEP}?\\d{4}(?!\\d)`,
+  'g',
+);
+// Without a country code, only separated 10-digit shapes: parenthesised area
+// code, 2-4-4 groups, and five pair groups, joined by space, dash or dot.
+// Bare 10-digit runs are not flagged (epoch seconds are 10 digits). Groups that
+// continue into a longer separated sequence (dates, lists) are skipped.
+const PHONE_LOCAL = new RegExp(
+  `(?<![A-Za-z0-9])(?<!\\d${SEP})(?:\\(\\d{2,3}\\)${SEP}?\\d{3,4}${SEP}\\d{4}|\\d{2}${SEP}\\d{4}${SEP}\\d{4}|\\d{2}(?:${SEP}\\d{2}){4})(?!\\d)(?!${SEP}\\d)`,
+  'g',
+);
+const UUID_PATTERN = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+// Fictitious numbers: 55 0000 00NN, with or without +52 and the mobile "1".
+const FICTITIOUS_PREFIXES = ['52550000', '5215500000', '55000000'];
 
-const FORBIDDEN_EXTENSIONS = new Set(['.ogg', '.wav', '.mp3', '.apk', '.jks', '.keystore']);
+const FORBIDDEN_EXTENSIONS = new Set([
+  '.ogg', '.wav', '.mp3', '.opus', '.m4a', '.oga', '.flac',
+  '.apk', '.jks', '.keystore', '.sqlite', '.db', '.pem', '.p12',
+]);
 const FORBIDDEN_BASENAMES = new Set(['local.properties']);
 const FORBIDDEN_SEGMENTS = new Set(['audio', 'results', 'samples', 'dist', 'node_modules']);
 
@@ -47,7 +66,7 @@ function isForbiddenPath(relPath) {
   if (dot > 0 && FORBIDDEN_EXTENSIONS.has(lower.slice(dot))) return true;
   if (FORBIDDEN_BASENAMES.has(lower)) return true;
   if ((lower === '.env' || lower.startsWith('.env.')) && lower !== '.env.example') return true;
-  return parts.slice(0, -1).some((segment) => FORBIDDEN_SEGMENTS.has(segment));
+  return parts.slice(0, -1).some((segment) => FORBIDDEN_SEGMENTS.has(segment.toLowerCase()));
 }
 
 function looksBinary(buffer) {
@@ -59,9 +78,15 @@ function looksBinary(buffer) {
 }
 
 function hasRealPhone(line) {
-  for (const match of line.matchAll(PHONE_PATTERN)) {
-    const digits = match[0].replace(/\D/g, '');
-    if (!FICTITIOUS_PREFIXES.some((prefix) => digits.startsWith(prefix))) return true;
+  const uuidSpans = [...line.matchAll(UUID_PATTERN)].map((m) => [m.index, m.index + m[0].length]);
+  for (const pattern of [PHONE_WITH_COUNTRY_CODE, PHONE_LOCAL]) {
+    for (const match of line.matchAll(pattern)) {
+      const start = match.index;
+      const end = start + match[0].length;
+      if (uuidSpans.some(([from, to]) => start >= from && end <= to)) continue;
+      const digits = match[0].replace(/\D/g, '');
+      if (!FICTITIOUS_PREFIXES.some((prefix) => digits.startsWith(prefix))) return true;
+    }
   }
   return false;
 }
@@ -132,10 +157,12 @@ export async function scan(root, { denylist = [] } = {}) {
 }
 
 function parseArgs(argv) {
-  const args = { root: null, denylist: null };
+  const args = { root: null, denylist: undefined };
   for (let i = 0; i < argv.length; i += 1) {
     if (argv[i] === '--denylist') {
-      args.denylist = argv[i + 1] ?? null;
+      const value = argv[i + 1];
+      // A missing, empty or flag-like value must never silently disable the denylist.
+      args.denylist = value === undefined || value.trim() === '' || value.startsWith('--') ? '' : value;
       i += 1;
     } else if (!args.root) {
       args.root = argv[i];
@@ -153,7 +180,13 @@ async function main() {
   const root = await realpath(resolve(args.root));
 
   let denylist = [];
-  if (args.denylist) {
+  if (args.denylist === '') {
+    console.error('denylist path required');
+    return 2;
+  }
+  if (args.denylist === undefined) {
+    console.error('no denylist: generic rules only');
+  } else {
     let denyPath;
     try {
       denyPath = await realpath(resolve(args.denylist));
@@ -162,11 +195,15 @@ async function main() {
       return 2;
     }
     const rel = relative(root, denyPath);
-    if (rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))) {
+    if (rel === '' || (rel !== '..' && !rel.startsWith(`..${sep}`) && !isAbsolute(rel))) {
       console.error('refusing to run: the denylist must live outside the scanned root');
       return 2;
     }
     denylist = (await readFile(denyPath, 'utf8')).split(/\r?\n/);
+    if (!denylist.some((entry) => entry.trim() !== '')) {
+      console.error('denylist is empty');
+      return 2;
+    }
   }
 
   const findings = await scan(root, { denylist });
