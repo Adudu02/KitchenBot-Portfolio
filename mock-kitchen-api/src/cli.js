@@ -4,6 +4,7 @@ import { networkInterfaces } from 'node:os';
 import QRCode from 'qrcode';
 import { createServer } from './server.js';
 import { provisioningPayload } from './provisioning.js';
+import { resolveBaseUrl } from './base-url.js';
 import { KITCHEN_NAME } from './store.js';
 
 const KITCHEN_ID = 'kitchen-demo';
@@ -36,7 +37,11 @@ const pngPath = pngPathFromArgs(process.argv.slice(2));
 const server = createServer({ token, kitchenId: KITCHEN_ID });
 
 server.listen(port, '0.0.0.0', async () => {
-  const baseUrl = `http://${lanAddress()}:${server.address().port}`;
+  const baseUrl = resolveBaseUrl({
+    override: process.env.PUBLIC_BASE_URL,
+    lanAddress: lanAddress(),
+    port: server.address().port,
+  });
   const payload = provisioningPayload({
     baseUrl,
     token,

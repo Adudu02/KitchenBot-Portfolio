@@ -21,12 +21,17 @@ Options:
 - `PORT` sets the listening port (default `3000`).
 - `PRINTER_TOKEN` fixes the printer token; otherwise a random one is generated
   on every start.
+- `PUBLIC_BASE_URL` overrides the base URL put in the provisioning QR, used
+  verbatim (for example `PUBLIC_BASE_URL=http://192.168.1.10:3000`). Set it
+  when the detected address is the wrong interface, such as a VPN or virtual
+  adapter.
 - `--png <path>` also writes the QR as a PNG, e.g.
   `npm start -w mock-kitchen-api -- --png /tmp/pair.png`. Nothing is written
   to disk unless you pass it.
 
-The CLI detects the first non-internal IPv4 address and uses it as the base
-URL, so the phone and the computer must be on the same network.
+Unless `PUBLIC_BASE_URL` is set, the CLI detects the first non-internal IPv4
+address and uses it as the base URL, so the phone and the computer must be on
+the same network. If that picks the wrong interface, set `PUBLIC_BASE_URL`.
 
 ## Pairing the app
 
