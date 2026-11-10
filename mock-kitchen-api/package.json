@@ -1,0 +1,17 @@
+{
+  "name": "@kitchenbot/mock-kitchen-api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "In-memory mock of the kitchen API consumed by the thermal-printer Android app.",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js",
+    "start": "node src/cli.js"
+  },
+  "dependencies": {
+    "qrcode": "1.5.4"
+  }
+}
