@@ -11,13 +11,12 @@ behind the parts that are.
 
 | Component | What it does | In this repo? |
 | --- | --- | --- |
-| **WhatsApp transport** | Carries customer messages in and out. Today it is an unofficial linked-device client; [ADR 0001](adr/0001-whatsapp-transport-migration.md) decides to replace it with Meta's official Cloud API. | No |
-| **whatsapp-manager** (bridge) | Receives messages from the transport, hands each conversation to the ordering agent, sends replies back, and keeps delivery state and an audit trail. Also downloads incoming voice notes and passes them to the speech packages. | No |
+| **whatsapp-manager** (bridge, including the WhatsApp transport) | Receives customer messages through the WhatsApp transport, hands each conversation to the ordering agent, sends replies back, and keeps delivery state and an audit trail. The transport is currently an unofficial linked-device client; [ADR 0001](adr/0001-whatsapp-transport-migration.md) decides to replace it with Meta's official Cloud API. | No |
 | **Hermes** (LLM agent with tools) | The ordering agent that talks to customers and takes orders. *Details intentionally omitted.* | No |
 | **kitchen-api** | System of record for orders, kitchens and the print queue. Printers poll it for pending print jobs and acknowledge them. | No |
 | **control-interface** | Admin web UI for operating the system and inspecting its state. | No |
-| **`packages/stt`, `packages/tts`** | Thin, provider-agnostic speech-to-text and text-to-speech packages behind a small contract, with a Deepgram adapter each. Used by the bridge for voice notes. | Yes |
-| **`voice-eval/`** | Disposable evaluation harness that scores speech recognition on structured orders (deletions and substitutions reported separately). It produced the evidence for [ADR 0003](adr/0003-voice-channel-go-no-go.md). | Yes |
+| **`packages/stt`, `packages/tts`** | Thin, provider-agnostic speech-to-text and text-to-speech packages behind a small contract, with a Deepgram adapter each. They support voice-note transcription and voice-note replies for internal and experimental use; customer voice ordering is deferred ([ADR 0003](adr/0003-voice-channel-go-no-go.md)). | Yes |
+| **`voice-eval/`** | Disposable evaluation harness that benchmarks speech-to-text providers, scoring structured orders (deletions and substitutions reported separately). It produced the evidence for [ADR 0003](adr/0003-voice-channel-go-no-go.md). | Yes |
 | **`printer-android/`** | Android app that pairs with a kitchen, polls for print jobs and prints tickets on a Bluetooth thermal printer. The UI is in Spanish. | Yes |
 | **`mock-kitchen-api/`** | In-memory stand-in for kitchen-api's print endpoints, so the printer app can be paired and exercised without the private backend. | Yes |
 
@@ -29,9 +28,8 @@ pieces that can be read, run and tested on their own.
 
 At the level of boxes:
 
-1. A customer sends a WhatsApp text or voice note.
-2. The **transport** delivers it to the **whatsapp-manager** bridge. A voice
-   note is first transcribed by the **stt** package.
+1. A customer sends a WhatsApp text message.
+2. The WhatsApp transport delivers it to the **whatsapp-manager** bridge.
 3. The bridge passes the conversation to the **ordering agent**, which gathers
    the order and records it through **kitchen-api**.
 4. kitchen-api queues a print job for the kitchen.
@@ -40,6 +38,10 @@ At the level of boxes:
    kitchen-api role for this step.
 6. The bridge delivers the agent's reply to the customer over the transport.
 7. Operators use **control-interface** to administer the system.
+
+The customer order flow is text-only. Customer voice ordering is deferred per
+[ADR 0003](adr/0003-voice-channel-go-no-go.md); the speech packages are used
+only for internal and experimental voice-note work.
 
 The agent's internals are deliberately not described here or anywhere in this
 repository.

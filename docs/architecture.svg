@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1070 600" width="1070" height="600" role="img" aria-labelledby="t d">
 <title id="t">KitchenBot architecture overview</title>
-<desc id="d">Customers message over WhatsApp to the bridge, which hands each conversation to an LLM agent whose internals are intentionally omitted. The agent talks to the kitchen API, which feeds print jobs to the Android printer app. Speech packages, an admin interface, a mock kitchen API and a voice evaluation harness sit around this flow; boxes with a green border are published in this repository.</desc>
+<desc id="d">Customers message over WhatsApp to the bridge, which hands each conversation to an LLM agent whose internals are intentionally omitted. The agent talks to the kitchen API, which feeds print jobs to the Android printer app. An admin interface manages the bridge; speech packages support internal voice-note use (customer voice ordering is deferred); a mock kitchen API and a speech-provider evaluation harness sit outside the flow; boxes with a green border are published in this repository.</desc>
 <style>
   .bg{fill:#f6f8fa;stroke:#d0d7de}
   .ttl{font:700 20px system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;fill:#1f2328}
@@ -37,26 +37,24 @@
 <line class="arr" x1="412" y1="158.0" x2="447" y2="158.0" marker-end="url(#ah)"/>
 <line class="arr" x1="622" y1="158.0" x2="657" y2="158.0" marker-end="url(#ah)"/>
 <line class="arr" x1="832" y1="158.0" x2="867" y2="158.0" marker-end="url(#ah)"/>
-<rect class="repo" x="240" y="290" width="170" height="76" rx="8"/>
-<text class="lbl" x="325.0" y="320" text-anchor="middle">stt / tts packages</text>
-<text class="sub" x="325.0" y="340" text-anchor="middle">transcribe and synthesize</text>
-<rect class="priv" x="450" y="290" width="170" height="76" rx="8"/>
-<text class="lbl" x="535.0" y="320" text-anchor="middle">control-interface</text>
-<text class="sub" x="535.0" y="340" text-anchor="middle">admin web UI</text>
+<rect class="repo" x="30" y="290" width="170" height="76" rx="8"/>
+<text class="lbl" x="115.0" y="320" text-anchor="middle">stt / tts packages</text>
+<text class="sub" x="115.0" y="340" text-anchor="middle">transcribe and synthesize</text>
+<path class="arr dash" d="M115 288 V238 H275 V199" marker-end="url(#ah)"/>
+<text class="alb" x="123" y="230" text-anchor="start">voice notes (internal use)</text>
+<rect class="priv" x="240" y="290" width="170" height="76" rx="8"/>
+<text class="lbl" x="325.0" y="320" text-anchor="middle">control-interface</text>
+<text class="sub" x="325.0" y="340" text-anchor="middle">admin web UI</text>
+<line class="arr" x1="325" y1="288" x2="325" y2="199" marker-end="url(#ah)"/>
+<text class="alb" x="335" y="248" text-anchor="start">admin</text>
 <rect class="repo" x="870" y="290" width="170" height="76" rx="8"/>
 <text class="lbl" x="955.0" y="320" text-anchor="middle">mock-kitchen-api</text>
 <text class="sub" x="955.0" y="340" text-anchor="middle">stands in for print endpoints</text>
-<line class="arr" x1="325.0" y1="288" x2="325.0" y2="199" marker-end="url(#ah)"/>
-<text class="alb" x="333.0" y="247.0" text-anchor="start">voice notes</text>
-<line class="arr" x1="535.0" y1="288" x2="535.0" y2="199" marker-end="url(#ah)"/>
-<text class="alb" x="545.0" y="247.0" text-anchor="start">administers</text>
-<line class="arr dash" x1="955.0" y1="288" x2="955.0" y2="199" marker-end="url(#ah)"/>
-<text class="alb" x="965.0" y="247.0" text-anchor="start">same API contract</text>
-<rect class="repo" x="240" y="450" width="170" height="76" rx="8"/>
-<text class="lbl" x="325.0" y="480" text-anchor="middle">voice-eval</text>
-<text class="sub" x="325.0" y="500" text-anchor="middle">offline speech benchmark</text>
-<line class="arr dash" x1="325.0" y1="448" x2="325.0" y2="369" marker-end="url(#ah)"/>
-<text class="alb" x="335.0" y="412.0" text-anchor="start">evaluates providers</text>
+<line class="arr dash" x1="955" y1="288" x2="955" y2="199" marker-end="url(#ah)"/>
+<text class="alb" x="965" y="248" text-anchor="start">same API contract</text>
+<rect class="repo" x="30" y="450" width="170" height="76" rx="8"/>
+<text class="lbl" x="115.0" y="480" text-anchor="middle">voice-eval</text>
+<text class="sub" x="115.0" y="500" text-anchor="middle">offline STT benchmark</text>
 <rect class="repo" x="30" y="555" width="22" height="14" rx="3"/>
 <text class="leg" x="60" y="567">Published in this repository</text>
 <rect class="priv" x="260" y="555" width="22" height="14" rx="3"/>
