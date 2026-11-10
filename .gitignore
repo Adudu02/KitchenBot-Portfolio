@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.env*
+!.env.example
+*.ogg
+*.wav
+*.mp3
+*.apk
+*.jks
+*.keystore
+local.properties
+build/
+.gradle/
+results/
+audio/
+samples/

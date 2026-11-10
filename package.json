@@ -1,0 +1,13 @@
+{
+  "name": "kitchenbot-portfolio",
+  "private": true,
+  "type": "module",
+  "workspaces": [],
+  "scripts": {
+    "test": "node --test scripts/*.test.mjs",
+    "sanitize": "node scripts/sanitize-check.mjs ."
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
