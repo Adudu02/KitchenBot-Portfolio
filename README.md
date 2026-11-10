@@ -22,7 +22,7 @@ Two questions drove most of the engineering in this repository:
 | [`printer-android/`](printer-android/) | Kotlin / Jetpack Compose app that pairs with a kitchen, polls for print jobs and prints tickets on a Bluetooth thermal printer. The UI is in Spanish. Needs JDK 17 or 21. | `cd printer-android && ./gradlew test` |
 | [`mock-kitchen-api/`](mock-kitchen-api/README.md) | In-memory stand-in for the kitchen backend's print endpoints, so the printer app can be paired and demonstrated without private services. | `npm start -w mock-kitchen-api` |
 
-`npm install && npm test` at the repository root runs every Node workspace. The keyless demo needs no API key, audio or network.
+With Node.js 22 or newer, `npm install && npm test` at the repository root runs every Node workspace. The keyless demo needs no API key, audio or network.
 
 ## Key decisions
 

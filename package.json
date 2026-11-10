@@ -12,6 +12,6 @@
     "sanitize": "node scripts/sanitize-check.mjs ."
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   }
 }
