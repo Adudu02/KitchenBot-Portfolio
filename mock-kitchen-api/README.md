@@ -22,7 +22,7 @@ Options:
 - `PRINTER_TOKEN` fixes the printer token; otherwise a random one is generated
   on every start.
 - `PUBLIC_BASE_URL` overrides the base URL put in the provisioning QR, used
-  verbatim (for example `PUBLIC_BASE_URL=http://192.168.1.10:3000`). Set it
+  as given, minus surrounding whitespace (for example `PUBLIC_BASE_URL=http://192.168.1.10:3000`). Set it
   when the detected address is the wrong interface, such as a VPN or virtual
   adapter.
 - `--png <path>` also writes the QR as a PNG, e.g.

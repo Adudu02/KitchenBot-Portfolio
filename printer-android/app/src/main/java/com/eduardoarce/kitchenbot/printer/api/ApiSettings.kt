@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.map
  * header, and each request names the kitchen and the printer it is fetching jobs for.
  */
 data class ApiSettings(
-    /** e.g. http://192.168.1.50:3000 — the Docker host running the Kitchen API. */
+    /** e.g. http://192.168.1.50:3000 — the machine running the kitchen API. */
     val baseUrl: String = "",
     /** Per-printer provisioning token scanned from the backend QR. */
     val printerToken: String = "",
@@ -30,10 +30,10 @@ data class ApiSettings(
     /** Printed as the receipt header. */
     val kitchenName: String = "",
     /**
-     * Optional URL of the kitchen orders display board (KDS web page), e.g.
-     * http://192.168.1.50:9119/#kitchen-dashboard. Blank derives it from
-     * [baseUrl]'s host on the Control Interface port (see DashboardUrl). Opened by the "Abrir tablero"
-     * button; never used by the print/polling flow.
+     * Optional URL of a web dashboard (for example a kitchen display page).
+     * Blank means no dashboard is configured; nothing is derived from [baseUrl]
+     * (see DashboardUrl). Opened by the "Abrir tablero" button; never used by
+     * the print/polling flow.
      */
     val dashboardUrl: String = "",
     /** Whether the polling service should run. */

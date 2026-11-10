@@ -24,3 +24,10 @@ test('treats an empty or blank override as unset', () => {
     );
   }
 });
+
+test('trims whitespace around PUBLIC_BASE_URL', () => {
+  assert.equal(
+    resolveBaseUrl({ override: '  http://10.0.0.5:8080 \n', lanAddress: '192.168.1.10', port: 3000 }),
+    'http://10.0.0.5:8080',
+  );
+});

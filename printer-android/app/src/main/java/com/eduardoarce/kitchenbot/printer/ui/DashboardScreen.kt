@@ -34,9 +34,9 @@ import com.eduardoarce.kitchenbot.printer.api.ApiSettingsStore
 import com.eduardoarce.kitchenbot.printer.dashboard.DashboardUrl
 
 /**
- * In-app WebView of the kitchen orders dashboard, so a kitchen without a printer
- * can still use the app. URL is [DashboardUrl.resolve] (dashboardUrl, or the API
- * host on the default dashboard port). Cleartext http is already allowed app-wide
+ * In-app WebView of an optional web dashboard. The URL is the explicitly
+ * configured dashboard URL ([DashboardUrl.resolve]); when it is blank a short
+ * message is shown instead. Cleartext http is already allowed app-wide
  * (usesCleartextTraffic in the manifest), same as the API polling.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,7 +52,7 @@ fun DashboardScreen(onBack: () -> Unit) {
 
     LaunchedEffect(Unit) {
         val settings = store.currentSettings()
-        url = DashboardUrl.resolve(settings.dashboardUrl, settings.baseUrl)
+        url = DashboardUrl.resolve(settings.dashboardUrl)
         loaded = true
     }
 
@@ -69,7 +69,7 @@ fun DashboardScreen(onBack: () -> Unit) {
             when {
                 !loaded -> Unit
                 current == null -> CenteredText(
-                    "Configura la URL de la API en Configuración para ver el dashboard."
+                    "No hay una URL de dashboard configurada. Agrégala en Configuración."
                 )
                 failed -> Column(
                     modifier = Modifier.fillMaxSize().padding(24.dp),

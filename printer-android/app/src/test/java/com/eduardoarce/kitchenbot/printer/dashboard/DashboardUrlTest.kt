@@ -7,35 +7,28 @@ import org.junit.Test
 class DashboardUrlTest {
 
     @Test
-    fun `explicit dashboard url wins and is returned as-is when it has a scheme`() {
-        val url = DashboardUrl.resolve(dashboardUrl = "http://192.168.1.50:8080/board", baseUrl = "http://192.168.1.50:3000")
-        assertEquals("http://192.168.1.50:8080/board", url)
+    fun `explicit dashboard url is returned as-is when it has a scheme`() {
+        assertEquals("http://192.168.1.50:8080/board", DashboardUrl.resolve("http://192.168.1.50:8080/board"))
     }
 
     @Test
     fun `explicit dashboard url without a scheme gets http prefixed`() {
-        assertEquals("http://board.local/kds", DashboardUrl.resolve("board.local/kds", ""))
+        assertEquals("http://board.local/kds", DashboardUrl.resolve("board.local/kds"))
     }
 
     @Test
     fun `https dashboard url is preserved`() {
-        assertEquals("https://kds.example.com", DashboardUrl.resolve("https://kds.example.com", ""))
+        assertEquals("https://kds.example.com", DashboardUrl.resolve("https://kds.example.com"))
     }
 
     @Test
-    fun `blank dashboard url defaults to the API host on control interface kitchen tab`() {
-        assertEquals("http://192.168.1.50:9119/#kitchen-dashboard", DashboardUrl.resolve("", "http://192.168.1.50:3000"))
+    fun `surrounding whitespace is trimmed`() {
+        assertEquals("http://board.local/kds", DashboardUrl.resolve("  board.local/kds  "))
     }
 
     @Test
-    fun `default handles a trailing slash and a missing scheme on the base url`() {
-        assertEquals("http://10.0.0.9:9119/#kitchen-dashboard", DashboardUrl.resolve("", "http://10.0.0.9:3000/"))
-        assertEquals("http://10.0.0.9:9119/#kitchen-dashboard", DashboardUrl.resolve("", "10.0.0.9:3000"))
-    }
-
-    @Test
-    fun `both blank yields null (nothing to open)`() {
-        assertNull(DashboardUrl.resolve(dashboardUrl = "", baseUrl = ""))
-        assertNull(DashboardUrl.resolve(dashboardUrl = "   ", baseUrl = "   "))
+    fun `blank dashboard url yields null and is never derived from anything else`() {
+        assertNull(DashboardUrl.resolve(""))
+        assertNull(DashboardUrl.resolve("   "))
     }
 }

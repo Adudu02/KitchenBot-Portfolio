@@ -58,8 +58,12 @@ this repository.
   model answers is hardware-dependent and unverified.
 - **Ticket editor:** header, logo, footer, uppercase style, live preview, test
   print and a standalone cut-paper action.
-- **Optional dashboard shortcut:** a web view for a kitchen display. The mock
-  API does not serve one, so leave that field empty when trying the app out.
+- **Optional web dashboard:** a WebView/shortcut for any web page, such as a
+  kitchen display. It is used only when a dashboard URL is entered explicitly
+  (the field is in the settings screen's developer mode, toggled by tapping the
+  "Configuración" title seven times); nothing is derived from the API address. With no URL set, the
+  Dashboard tab shows a short Spanish "no dashboard URL configured" message.
+  The mock API does not serve a dashboard, so leave it empty when trying the app.
 
 The HTTP contract is small and fully implemented by
 [`mock-kitchen-api`](../mock-kitchen-api/README.md); that README lists every
@@ -108,8 +112,11 @@ Expected result (manual test checklist):
   enqueues one test job automatically. Within one polling interval the app
   prints the orders and the test job (a ticket with a single "Test print" line)
   and acknowledges each one; the mock then returns an empty queue.
-- **Probar conexión** in the settings screen enqueues another test job, which
-  prints the same way.
+- **Probar conexión** (the button label says it prints "CONEXIÓN LISTA") asks
+  the API to enqueue a test job. The real backend renders that text; the mock
+  just enqueues a generic order whose single item is "Test print", so with the
+  mock you will see that line on the ticket instead. The mock-queued test job
+  prints the same way as any other order.
 - In the ticket editor, **Test print** prints a sample order using the current
   layout, and **Cut paper** cuts (or just feeds, if the printer has no cutter).
 

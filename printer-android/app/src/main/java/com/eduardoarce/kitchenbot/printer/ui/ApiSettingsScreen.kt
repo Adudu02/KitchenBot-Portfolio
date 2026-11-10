@@ -160,12 +160,12 @@ fun ApiSettingsScreen(
         }
     }
 
-    // Opens the kitchen orders display board (KDS) web page in a browser. The URL
-    // is the explicit dashboard field, or the API host on the default board port.
+    // Opens the optional web dashboard in a browser. The URL is only the explicit
+    // dashboard field; there is no derived default.
     fun openDashboard() {
-        val url = DashboardUrl.resolve(dashboardUrl, baseUrl)
+        val url = DashboardUrl.resolve(dashboardUrl)
         if (url == null) {
-            scope.launch { snackbarHostState.showSnackbar("Configura la URL del tablero o de la API") }
+            scope.launch { snackbarHostState.showSnackbar("Configura la URL del tablero") }
             return
         }
         saveAndSyncService()
@@ -374,13 +374,13 @@ fun ApiSettingsScreen(
                 OutlinedTextField(
                     value = dashboardUrl,
                     onValueChange = { dashboardUrl = it },
-                    label = { Text("URL del tablero (opcional, http://IP:9119/#kitchen-dashboard)") },
+                    label = { Text("URL del panel web (opcional), p. ej. http://IP:PUERTO/") },
                     singleLine = true,
                     enabled = loaded,
                     modifier = Modifier.fillMaxWidth()
                 )
                 Text(
-                    "Déjalo vacío para usar el host de la API en Control Interface.",
+                    "Déjalo vacío si no usas un panel web.",
                     style = MaterialTheme.typography.bodySmall
                 )
             }
