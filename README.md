@@ -4,6 +4,14 @@
 
 Selected, runnable parts of KitchenBot, a WhatsApp ordering system for Mexican kitchens: a speech-recognition evaluation where the best result was 43% fully correct orders against a 65% gate, leading to a documented "defer" decision, speech packages, a thermal-printer Android app, and the architecture decisions behind them.
 
+## Start with the code
+
+- **Parsing and algorithms:** [order parser](voice-eval/src/parse-order.js), [structured scorer](voice-eval/src/score-order.js), and their [regression tests](voice-eval/test/score-order.test.js).
+- **TypeScript and API integration:** [speech contract](packages/stt/src/contract.ts), [provider implementation](packages/stt/src/deepgram.ts), and [failure-path tests](packages/stt/src/deepgram.test.ts).
+- **Android and hardware integration:** [receipt formatting](printer-android/app/src/main/java/com/eduardoarce/kitchenbot/printer/printer/ReceiptFormatter.kt), [printer status decoding](printer-android/app/src/main/java/com/eduardoarce/kitchenbot/printer/printer/PrinterStatus.kt), and [formatting tests](printer-android/app/src/test/java/com/eduardoarce/kitchenbot/printer/printer/ReceiptFormatterTest.kt).
+
+The [code walkthrough](docs/code-walkthrough.md) connects each example to the capability it demonstrates, its tests, a command to run it, and my individual or shared contribution.
+
 ## The problem
 
 Small kitchens in Mexico already receive orders over WhatsApp. KitchenBot lets customers order by text message, with an LLM ordering agent gathering the order, and prints each confirmed order as a ticket in the kitchen.
