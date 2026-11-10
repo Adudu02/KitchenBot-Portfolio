@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "voice-eval"
+    "voice-eval",
+    "packages/*"
   ],
   "scripts": {
     "test": "node --test scripts/*.test.mjs && npm test --workspaces --if-present",
