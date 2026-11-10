@@ -1,6 +1,6 @@
 # KitchenBot Portfolio
 
-Selected, runnable parts of KitchenBot, a WhatsApp ordering system for Mexican kitchens: a speech-recognition evaluation that ended in a documented "defer" decision, speech packages, a thermal-printer Android app, and the architecture decisions behind them.
+Selected, runnable parts of KitchenBot, a WhatsApp ordering system for Mexican kitchens: a speech-recognition evaluation where the best result was 43% fully correct orders against a 65% gate, leading to a documented "defer" decision, speech packages, a thermal-printer Android app, and the architecture decisions behind them.
 
 ## The problem
 
@@ -26,7 +26,7 @@ Two questions drove most of the engineering in this repository:
 
 Each decision is written up as an architecture decision record (ADR).
 
-- [ADR 0001: migrate the WhatsApp transport to Meta's official Cloud API.](docs/adr/0001-whatsapp-transport-migration.md) The unofficial client shows anti-abuse signals, and a ban would remove the customers' saved number, the conversation history and the order channel on the same day. The ADR chooses a direct integration over a reseller and puts an expiry on the rollback flag.
+- [ADR 0001: migrate the WhatsApp transport to Meta's official Cloud API.](docs/adr/0001-whatsapp-transport-migration.md) The unofficial client shows anti-abuse signals, and a ban would remove the customers' saved number, the conversation history and the order channel on the same day. The proposed decision chooses a direct integration over a reseller and puts an expiry on the rollback flag; the migration has not been completed.
 - [ADR 0002: score speech recognition on structured orders, not word error rate.](docs/adr/0002-voice-poc-evaluation-criteria.md) Pass marks were fixed before any result existed: at least 65% of orders fully correct, at most 5% missing an item. Deletions and substitutions are separate metrics, because the read-back to the customer catches a wrong item but not a missing one.
 - [ADR 0003: defer customer voice ordering.](docs/adr/0003-voice-channel-go-no-go.md) On 21 annotated samples from 11 speakers over telephone-grade audio, the best result (Deepgram with vocabulary boosting) had 43% of orders fully correct against the 65% gate, and 43% of orders missing an item against the 5% guardrail. No provider passed, so the channel was deferred, not dropped, because the failures are specific and addressable. A proof of concept that shows a technology is not ready is a successful one.
 
@@ -43,8 +43,7 @@ I am Eduardo Arce. I built this with a small team, and I focused on the followin
 - Designed and ran the speech-to-text evaluation in `voice-eval/`: the audio degradation pipeline, order parser, scorer and provider adapters (Deepgram, Google Cloud), the annotation guide, and the 21-sample corpus run.
 - Wrote ADRs 0001 to 0003 and the research behind the WhatsApp migration and the voice go/no-go decision.
 - Built the speech-to-text and text-to-speech packages and wired WhatsApp voice-note transcription and voice-note replies into the bridge.
-- Contributed to the printer workflow and the Android printer app (shared work with the team), including printer configuration and ticket header sync from the kitchen QR scan.
-- Contributed documentation and a slim production image check.
+- Contributed to the printer workflow and the Android printer app (shared work with the team), including the receipt formatter, ticket templates and editor, printer configuration, ticket header sync from the kitchen QR scan, and ESC/POS physical-status readback.
 
 ## Team
 
