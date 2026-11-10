@@ -1,0 +1,49 @@
+{
+  "aliases": {
+    "taco al pastor": ["tacos al pastor", "taco de pastor", "tacos de pastor"],
+    "agua de horchata": ["horchata", "agua horchata"],
+    "grande": ["grandes", "el grande"]
+  },
+  "cases": [
+    {
+      "id": "exact-match",
+      "transcript": "2 tacos al pastor",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 2, "modifiers": [] }] }
+    },
+    {
+      "id": "numeric-variant",
+      "transcript": "dos tacos al pastor",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 2, "modifiers": [] }] }
+    },
+    {
+      "id": "alias-variant",
+      "transcript": "2 tacos de pastor",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 2, "modifiers": [] }] }
+    },
+    {
+      "id": "substitution",
+      "transcript": "1 agua de horchata",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 1, "modifiers": [] }] }
+    },
+    {
+      "id": "deletion",
+      "transcript": "2 tacos al pastor",
+      "expected": {
+        "items": [
+          { "item": "taco al pastor", "quantity": 2, "modifiers": [] },
+          { "item": "agua de horchata", "quantity": 1, "modifiers": [] }
+        ]
+      }
+    },
+    {
+      "id": "insertion",
+      "transcript": "2 tacos al pastor y 1 agua de horchata",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 2, "modifiers": [] }] }
+    },
+    {
+      "id": "empty-transcript",
+      "transcript": "",
+      "expected": { "items": [{ "item": "taco al pastor", "quantity": 1, "modifiers": [] }] }
+    }
+  ]
+}

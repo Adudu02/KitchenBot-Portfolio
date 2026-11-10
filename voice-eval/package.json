@@ -7,6 +7,7 @@
   },
   "scripts": {
     "test": "node --test test/*.test.js",
+    "demo": "node src/demo.js",
     "validate:corpus": "node src/validate-corpus.js",
     "prepare:audio": "node src/prepare-audio.js",
     "run:poc": "node src/cli.js"
